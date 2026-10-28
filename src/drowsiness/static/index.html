@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Driver Drowsiness · Local monitor</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/alert-sound.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="masthead"><div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 26 12 6m13 20L20 6M16 8v5m0 6v5"/></svg><span>Driver Drowsiness</span></div><span class="local-label">Local research prototype</span></header>
+  <main>
+    <div class="page-heading"><div><h1>Driver monitor</h1><p>Learn your baseline. Follow the signs over time.</p></div><div class="actions"><button id="demo" class="secondary">Try a simulated session</button><button id="start">Start camera</button><button id="pause" class="secondary" disabled title="Available after calibration; keeps your baseline">Pause camera</button><button id="stop" class="secondary" disabled>Stop session</button></div></div>
+    <div id="error" class="error" role="alert" hidden></div>
+    <div id="demo-banner" class="demo-banner" hidden>Simulated session — generated measurements, no camera inference or accuracy test. Sustained closure begins around 20 seconds.</div>
+    <div class="workspace">
+      <section class="camera-section" aria-label="Camera preview">
+        <div class="section-line"><h2>Camera view</h2><span id="connection">Camera off</span></div>
+        <div class="preview">
+          <video id="video" autoplay playsinline muted hidden></video><canvas id="overlay" aria-hidden="true" hidden></canvas>
+          <div id="empty-preview"><svg class="face-guide" viewBox="0 0 160 130" aria-hidden="true"><path d="M20 40V20h25m70 0h25v20m0 50v20h-25m-70 0H20V90"/><ellipse cx="80" cy="60" rx="28" ry="34"/><path d="M42 115c3-24 73-24 76 0m-47-56h2m14 0h2m-16 18q7 5 14 0"/></svg><h3 id="preview-title">Your session starts here</h3><p id="preview-message">Sit facing the camera in even light.<br>Start only when you feel rested.</p><span class="privacy">Frames stay on this machine. No video is saved.</span></div>
+          <div class="preview-footer"><span id="preview-tag">Waiting for camera</span><span id="latency">— ms / frame</span></div>
+        </div>
+        <div class="calibration-line"><div><strong id="calibration-title">A baseline that belongs to you</strong><span id="calibration-detail">45 seconds of usable footage · blink naturally</span></div><span id="calibration-percent">0%</span></div>
+        <progress id="calibration" max="1" value="0" aria-label="Calibration progress"></progress>
+      </section>
+      <section class="readout" aria-label="Fatigue estimate">
+        <div class="section-line"><h2>Current estimate</h2><span id="model-kind">Checking model</span></div>
+        <div class="state-heading"><h3 id="state" aria-live="polite">Ready to calibrate</h3><div class="score"><span id="score">—</span><small>/ 100</small></div></div>
+        <p id="reason" class="reason">Start a session to measure eye closure, blinks, yawns, and head movement.</p>
+        <div class="levels" aria-label="Heuristic fatigue score ranges"><span class="level-alert">Alert <small>0–34</small></span><span class="level-fatigued">Fatigued <small>35–64</small></span><span class="level-critical">Critical <small>65–100</small></span></div>
+        <dl class="signals">
+          <div><dt>Slow eye closure <small>EAR-based proxy · last 60 s</small></dt><dd id="closure-ratio">—<small>% of observed time</small></dd></div>
+          <div><dt>Current eye closure</dt><dd id="closure-seconds">—<small>seconds</small></dd></div>
+          <div><dt>Mean blink duration</dt><dd id="blink-seconds">—<small>seconds</small></dd></div>
+          <div><dt>Yawn candidates</dt><dd id="yawns">—<small>per observed minute</small></dd></div>
+          <div><dt>Head-nod candidates</dt><dd id="nods">—<small>per observed minute</small></dd></div>
+          <div><dt>Tracking coverage</dt><dd id="coverage">—<small>% of recent time</small></dd></div>
+        </dl>
+        <div class="raw-signals"><span>EAR <b id="ear">—</b></span><span>MAR <b id="mar">—</b></span><span>Pitch <b id="pitch">—</b></span></div>
+      </section>
+    </div>
+    <section class="history" aria-labelledby="history-heading">
+      <div class="section-line"><h2 id="history-heading">Fatigue over time</h2><span>Last 120 seconds · gaps mean no estimate</span><button id="export" class="text-button" disabled>Export session JSON</button></div>
+      <div class="plot"><svg id="chart" viewBox="0 0 960 180" role="img" aria-label="Fatigue score over the last 120 seconds"><g class="grid"><path d="M38 18H948M38 66H948M38 113H948M38 160H948"/></g><g class="axis"><text x="0" y="22">100</text><text x="8" y="70">65</text><text x="8" y="117">35</text><text x="16" y="164">0</text></g><path id="trace" d=""/><text id="chart-empty" x="490" y="90" text-anchor="middle">Your fatigue history will appear here</text></svg><div class="time-axis"><span>120 s ago</span><span>Now</span></div></div>
+    </section>
+    <div class="bottom-grid">
+      <section class="settings"><h2>Session setup</h2><div class="settings-row"><label for="duration">Calibration duration<select id="duration"><option value="30">30 seconds</option><option value="45" selected>45 seconds</option><option value="60">60 seconds</option></select></label><label class="checkbox"><input id="clahe" type="checkbox"><span>Enhance dim light<small>CLAHE contrast enhancement</small></span></label><label class="checkbox"><input id="sound" type="checkbox" checked><span>Critical alert sound<small id="sound-status" role="status">Enabled · starts with your session</small></span></label><button id="test-sound" type="button" class="secondary">Test sound</button></div><p class="hint">Keep one face in view. Glasses glare, extreme head turns, or darkness can interrupt tracking. Use Stop, then Start to recalibrate.</p></section>
+      <section class="events"><h2>Session activity</h2><ul id="events"><li class="muted">No session activity yet.</li></ul></section>
+    </div>
+    <footer><p>Experimental fatigue cues, not a validated driving-safety system. The score is a heuristic, not a probability. Do not test while driving.</p><span id="runtime">Checking local runtime…</span></footer>
+  </main>
+</body>
+</html>
+
+
